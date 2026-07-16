@@ -1396,6 +1396,11 @@
                                             </select>
                                         </div>
                                     </div>
+
+                                    <div id="major-input-wrapper" class="hidden mt-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">专业</label>
+                                        <input type="text" id="profile-major" class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="例如：计算机科学与技术、临床医学、金融学...">
+                                    </div>
                                 </div>
 
                                 <div>
@@ -2233,6 +2238,8 @@
                 DataStore.userProfile.motto = document.getElementById('profile-motto').value;
                 DataStore.userProfile.dailyTime = parseInt(document.getElementById('profile-daily-time').value) || 60;
                 DataStore.userProfile.weakSubjects = weakSubjects;
+                var majorInput = document.getElementById('profile-major');
+                if (majorInput) DataStore.userProfile.major = majorInput.value;
                 DataStore.save();
                 try { updateHeaderProfile(); } catch(err) {}
             } catch(e) {
@@ -3517,7 +3524,7 @@
                 return '学生是高中阶段，题目符合高中知识范围。';
             }
             if (grade && grade.includes('大学')) {
-                return '学生是大学阶段，题目符合大学知识范围。';
+                return '学生是大学阶段，题目符合大学知识范围。' + ((DataStore.userProfile && DataStore.userProfile.major) ? '专业为' + DataStore.userProfile.major + '。' : '');
             }
             if (grade && grade.includes('研究生')) {
                 return '学生是研究生阶段，题目符合研究生知识范围。';
@@ -3537,13 +3544,34 @@
                 return ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治'];
             }
             if (grade && (grade.includes('大学') || grade.includes('研究生'))) {
-                return ['高等数学', '线性代数', '概率论', '大学英语', '专业课程'];
+                var major = (DataStore.userProfile && DataStore.userProfile.major) || '';
+                if (major.includes('计算机') || major.includes('软件') || major.includes('信息')) {
+                    return ['高等数学', '线性代数', '概率论', '大学英语', '数据结构', '操作系统', '计算机网络', '数据库原理'];
+                } else if (major.includes('医学') || major.includes('临床') || major.includes('药')) {
+                    return ['系统解剖学', '生理学', '生物化学', '大学英语', '病理学', '药理学', '内科学', '外科学'];
+                } else if (major.includes('金融') || major.includes('经济') || major.includes('会计') || major.includes('商')) {
+                    return ['高等数学', '线性代数', '微观经济学', '大学英语', '宏观经济学', '金融学', '会计学', '统计学'];
+                } else if (major.includes('法') || major.includes('法律')) {
+                    return ['法理学', '宪法学', '民法', '刑法', '大学英语', '行政法', '经济法', '国际法'];
+                } else if (major.includes('建筑') || major.includes('土木') || major.includes('工程')) {
+                    return ['高等数学', '线性代数', '大学英语', '材料力学', '结构力学', '工程制图', '流体力学', '混凝土结构'];
+                } else if (major.includes('电子') || major.includes('通信') || major.includes('电气')) {
+                    return ['高等数学', '线性代数', '大学英语', '电路分析', '模拟电子技术', '数字电子技术', '信号与系统', '电磁场'];
+                } else if (major.includes('化学') || major.includes('化工') || major.includes('材料')) {
+                    return ['高等数学', '大学英语', '无机化学', '有机化学', '物理化学', '分析化学', '化工原理', '材料科学'];
+                } else if (major.includes('英语') || major.includes('翻译') || major.includes('外语')) {
+                    return ['综合英语', '英语听力', '英语口语', '英美文学', '翻译理论与实践', '英语写作', '语言学概论', '第二外语'];
+                } else if (major.includes('教育') || major.includes('师范') || major.includes('心理')) {
+                    return ['教育学原理', '普通心理学', '大学英语', '教育心理学', '中国教育史', '教学论', '发展心理学', '教育研究方法'];
+                } else {
+                    return ['高等数学', '线性代数', '概率论', '大学英语', '专业课程一', '专业课程二', '专业课程三', '专业课程四'];
+                }
             }
             // 默认
             return ['语文', '数学', '英语', '物理', '化学'];
         }
 
-        // 生成学习计划
+        // 生成学习计划（科目每日轮换）
         function generateStudyPlan() {
             try {
                 var grade = DataStore.userProfile.grade || '';
@@ -3569,26 +3597,59 @@
                     return;
                 }
 
+                // 按日期轮换科目：每天安排部分科目，不全部堆满
+                var today = new Date();
+                var dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+                var totalSubjects = allSubjects.length;
+
+                // 每天安排的科目数量：3-5科（根据总数动态调整）
+                var dailyCount = Math.min(Math.max(Math.ceil(totalSubjects / 2), 3), 5);
+                // 按日期偏移，轮换选取
+                var startIndex = dayOfYear % totalSubjects;
+                var todaySubjects = [];
+                for (var d = 0; d < dailyCount && d < totalSubjects; d++) {
+                    todaySubjects.push(allSubjects[(startIndex + d) % totalSubjects]);
+                }
+
+                // 构建周计划（7天轮换）
+                var weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                var dayIndex = (today.getDay() + 6) % 7; // 0=周一
+
                 var plans = [];
-                for (var idx = 0; idx < allSubjects.length; idx++) {
-                    var subject = allSubjects[idx];
-                    var mistakeCount = mistakeSubjects[subject] || 0;
-                    plans.push({
-                        id: Date.now() + idx,
-                        subject: subject,
-                        focus: mistakeCount > 0 ? '重点攻克' + subject + '的' + mistakeCount + '道错题，并学习新知识' : '系统学习' + subject + '新知识，挑战进阶题目',
-                        duration: '25分钟',
-                        frequency: '每天',
-                        tips: getStudyTips(subject),
-                        completed: false,
-                        date: new Date().toISOString().split('T')[0]
-                    });
+                for (var w = 0; w < 7; w++) {
+                    var weekStart = (startIndex + w) % totalSubjects;
+                    var daySubjects = [];
+                    for (var s = 0; s < dailyCount && s < totalSubjects; s++) {
+                        daySubjects.push(allSubjects[(weekStart + s) % totalSubjects]);
+                    }
+
+                    var planDate = new Date(today);
+                    planDate.setDate(planDate.getDate() + w);
+                    var dateStr = planDate.toISOString().split('T')[0];
+
+                    for (var si = 0; si < daySubjects.length; si++) {
+                        var subject = daySubjects[si];
+                        var mistakeCount = mistakeSubjects[subject] || 0;
+                        var focusText = mistakeCount > 0
+                            ? '重点攻克' + subject + '的' + mistakeCount + '道错题，并学习新知识'
+                            : '系统学习' + subject + '新知识，挑战进阶题目';
+                        plans.push({
+                            id: Date.now() + w * 100 + si,
+                            subject: subject,
+                            focus: focusText,
+                            duration: '25分钟',
+                            frequency: weekDays[w],
+                            tips: getStudyTips(subject),
+                            completed: false,
+                            date: dateStr
+                        });
+                    }
                 }
 
                 DataStore.plans = plans;
                 DataStore.save();
                 renderPlans();
-                showToast('学习计划已生成！', 'success');
+                showToast('学习计划已生成！每天安排' + dailyCount + '科，自动轮换~', 'success');
             } catch (e) {
                 console.log('generateStudyPlan error:', e);
                 showToast('计划生成出错，请检查个人信息是否已设置年级', 'error');
@@ -3605,9 +3666,67 @@
                 '生物': '理解生物概念，记忆重要知识点，多看图表',
                 '历史': '梳理时间线，记忆重要事件，理解历史背景',
                 '地理': '多看地图，理解地理原理，记忆重要数据',
-                '政治': '理解政治概念，关注时事，记忆重要理论'
+                '政治': '理解政治概念，关注时事，记忆重要理论',
+                '高等数学': '重点掌握极限、微分和积分，多做经典题型，理解定理推导过程',
+                '线性代数': '熟练矩阵运算，理解向量空间和特征值，多做证明题',
+                '概率论': '掌握概率分布和随机变量，多做应用题，理解大数定律',
+                '大学英语': '坚持每天背单词，精读英文文献，练习翻译和写作',
+                '数据结构': '手写链表、树、图的代码，理解时间复杂度，刷经典算法题',
+                '操作系统': '理解进程管理和内存管理，结合实验加深理解进程调度算法',
+                '计算机网络': '掌握TCP/IP协议栈，理解各层作用，多做抓包分析实验',
+                '数据库原理': '掌握SQL语法和范式理论，理解索引和事务，多做建表练习',
+                '系统解剖学': '结合图谱记忆人体结构，多做填图练习，理解器官位置关系',
+                '生理学': '理解各系统功能机制，掌握调节原理，结合临床案例学习',
+                '生物化学': '掌握代谢途径和酶的作用，理解DNA/RNA复制转录翻译过程',
+                '病理学': '理解疾病发生发展规律，掌握病理变化特征，结合临床病例分析',
+                '药理学': '分类记忆药物作用机制，掌握不良反应和禁忌症，多做案例题',
+                '内科学': '掌握各系统常见病诊疗规范，理解鉴别诊断思路，多看临床病例',
+                '外科学': '理解手术适应症和操作步骤，掌握围手术期管理，多看手术视频',
+                '微观经济学': '理解供求模型和弹性理论，掌握消费者行为和生产者理论',
+                '宏观经济学': '掌握GDP、通胀和失业等核心指标，理解财政货币政策',
+                '金融学': '理解货币时间价值和风险管理，掌握投资组合理论，关注市场动态',
+                '会计学': '掌握会计准则和借贷记账法，多做分录练习，理解财务报表编制',
+                '统计学': '掌握描述统计和推断统计方法，熟练使用统计工具分析数据',
+                '法理学': '理解法的本质和作用，掌握法律关系和法律推理方法',
+                '宪法学': '熟记宪法条文，理解公民基本权利和国家机构设置',
+                '民法': '掌握民事法律行为和合同法核心内容，多做案例分析',
+                '刑法': '理解犯罪构成要件，掌握刑罚制度，分析典型案例',
+                '行政法': '理解行政行为和行政诉讼程序，掌握行政复议和赔偿制度',
+                '经济法': '掌握公司法、合同法和竞争法核心内容，结合商业案例分析',
+                '国际法': '理解国际条约和国际组织作用，掌握国际争端解决机制',
+                '材料力学': '掌握应力应变分析，理解梁的弯曲和扭转理论，多做计算题',
+                '结构力学': '理解静定和超静定结构分析，掌握力法和位移法',
+                '工程制图': '熟练掌握CAD制图软件，多练习三视图和剖面图绘制',
+                '流体力学': '理解流体静力学和动力学基本方程，掌握伯努利方程应用',
+                '混凝土结构': '掌握受弯和受压构件设计方法，理解构造要求，多做设计题',
+                '电路分析': '掌握基尔霍夫定律和戴维南定理，熟练列写节点电压方程',
+                '模拟电子技术': '理解二极管和三极管工作原理，掌握放大电路分析方法',
+                '数字电子技术': '熟练逻辑代数化简，掌握组合逻辑和时序逻辑电路设计',
+                '信号与系统': '掌握傅里叶变换和拉普拉斯变换，理解系统函数和稳定性',
+                '电磁场': '理解麦克斯韦方程组，掌握电磁波的传播和辐射规律',
+                '无机化学': '掌握元素周期律和化学键理论，理解配位化合物结构',
+                '有机化学': '掌握各类有机反应机理，熟练命名法，多做合成路线设计',
+                '物理化学': '掌握热力学三大定律，理解化学平衡和电化学原理',
+                '分析化学': '熟练掌握滴定分析和仪器分析方法，理解误差和数据处理',
+                '化工原理': '掌握流体输送和传热传质原理，理解典型化工设备操作',
+                '材料科学': '理解材料结构与性能关系，掌握各类材料特性和应用',
+                '综合英语': '精读英文原著，积累高级词汇和地道表达，练习长篇写作',
+                '英语听力': '每天精听VOA/BBC新闻，练习听写和复述，提高语感',
+                '英语口语': '模仿native speaker语调，进行情景对话练习，大胆开口说',
+                '英美文学': '阅读经典文学作品，理解文学流派和写作手法，撰写读后感',
+                '翻译理论与实践': '掌握翻译技巧和策略，多做英汉互译练习，注重信达雅',
+                '英语写作': '练习议论文和说明文写作，掌握段落结构和论证方法',
+                '语言学概论': '理解语音学和语法学基本概念，掌握语言分析方法',
+                '第二外语': '坚持每天学习基础语法和词汇，多听多读多练，打好基础',
+                '教育学原理': '理解教育目的和教育制度，掌握教学方法和课程理论',
+                '普通心理学': '掌握感知记忆思维等心理过程，理解个体差异和心理发展',
+                '教育心理学': '理解学习理论和动机理论，掌握教学设计和课堂管理策略',
+                '中国教育史': '梳理教育制度发展脉络，记忆重要教育家和教育思想',
+                '教学论': '掌握教学原则和教学方法，理解教学过程和教学评价',
+                '发展心理学': '理解各年龄阶段心理发展特点，掌握心理发展规律和影响因素',
+                '教育研究方法': '掌握定量和定性研究方法，学会设计研究方案和分析数据'
             };
-            return tips[subject] || '认真复习，多做练习';
+            return tips[subject] || '认真复习，多做练习，查漏补缺';
         }
 
         function renderPlans() {
@@ -3620,35 +3739,72 @@
                 }
 
                 var today = new Date().toISOString().split('T')[0];
-                var html = '';
+                var weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+                // 按日期分组
+                var grouped = {};
                 for (var i = 0; i < DataStore.plans.length; i++) {
                     var plan = DataStore.plans[i];
-                    var subject = plan.subject || '综合';
-                    var isCompletedToday = plan.completed && plan.date === today;
-                    var opacityClass = isCompletedToday ? 'opacity-60' : '';
-                    var firstChar = subject ? subject.charAt(0) : '学';
-                    var completedTag = isCompletedToday ? '<span class="px-2 py-1 bg-green-100 text-green-600 rounded-full text-xs">今日已完成</span>' : '';
-                    var btnText = isCompletedToday ? '已完成' : '开始学习';
-                    var disabledAttr = isCompletedToday ? 'disabled' : '';
+                    var dateKey = plan.date || today;
+                    if (!grouped[dateKey]) grouped[dateKey] = [];
+                    grouped[dateKey].push(plan);
+                }
 
-                    html += '<div class="bg-white rounded-2xl p-6 shadow-sm card-hover ' + opacityClass + '">' +
-                        '<div class="flex items-center gap-3 mb-4">' +
-                        '<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-bold text-lg">' + escapeHtml(firstChar) + '</div>' +
-                        '<div>' +
-                        '<h4 class="font-bold text-gray-800">' + escapeHtml(subject) + '专项</h4>' +
-                        '<p class="text-sm text-gray-500">' + escapeHtml(plan.frequency || '每天') + ' · ' + escapeHtml(plan.duration || '25分钟') + '</p>' +
-                        '</div>' + completedTag + '</div>' +
-                        '<div class="space-y-3 mb-4">' +
-                        '<div class="flex items-start gap-2">' +
-                        '<i class="fas fa-bullseye text-primary mt-1"></i>' +
-                        '<p class="text-sm text-gray-600">' + escapeHtml(plan.focus || '') + '</p></div>' +
-                        '<div class="flex items-start gap-2">' +
-                        '<i class="fas fa-lightbulb text-accent mt-1"></i>' +
-                        '<p class="text-sm text-gray-600">' + escapeHtml(plan.tips || '') + '</p></div></div>' +
-                        '<div class="flex items-center gap-2">' +
-                        '<button onclick="startStudySession(\'' + subject.replace(/'/g, "\\'") + '\', ' + plan.id + ')" class="flex-1 bg-primary text-white py-2 rounded-xl text-sm hover:bg-primary/90 transition-colors" ' + disabledAttr + '>' + btnText + '</button>' +
-                        '<button onclick="completePlan(' + plan.id + ')" class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors">完成</button>' +
-                        '</div></div>';
+                // 按日期排序
+                var sortedDates = Object.keys(grouped).sort();
+
+                var html = '';
+                for (var di = 0; di < sortedDates.length; di++) {
+                    var dateKey = sortedDates[di];
+                    var dayPlans = grouped[dateKey];
+                    var isToday = dateKey === today;
+
+                    // 日期标题
+                    var dateObj = new Date(dateKey + 'T00:00:00');
+                    var dayLabel = isToday ? '今天' : (weekDays[dateObj.getDay()] || '');
+                    var dateDisplay = (dateObj.getMonth() + 1) + '/' + dateObj.getDate();
+
+                    html += '<div class="col-span-full mb-2">' +
+                        '<div class="flex items-center gap-3 ' + (isToday ? 'text-primary font-bold' : 'text-gray-600') + '">' +
+                        '<span class="text-lg">' + (isToday ? '📅' : '📆') + '</span>' +
+                        '<span>' + dayLabel + '</span>' +
+                        '<span class="text-sm text-gray-400">' + dateDisplay + '</span>';
+                    if (isToday) {
+                        var todayDone = dayPlans.filter(function(p) { return p.completed && p.date === today; }).length;
+                        html += '<span class="ml-auto text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">' + todayDone + '/' + dayPlans.length + ' 已完成</span>';
+                    }
+                    html += '</div></div>';
+
+                    // 该天的计划卡片
+                    for (var pi = 0; pi < dayPlans.length; pi++) {
+                        var plan = dayPlans[pi];
+                        var subject = plan.subject || '综合';
+                        var isCompletedToday = plan.completed && plan.date === today;
+                        var opacityClass = isCompletedToday ? 'opacity-60' : '';
+                        var firstChar = subject ? subject.charAt(0) : '学';
+                        var completedTag = isCompletedToday ? '<span class="px-2 py-1 bg-green-100 text-green-600 rounded-full text-xs">已完成</span>' : '';
+                        var btnText = isCompletedToday ? '已完成' : '开始学习';
+                        var disabledAttr = isCompletedToday ? 'disabled' : '';
+
+                        html += '<div class="bg-white rounded-2xl p-6 shadow-sm card-hover ' + opacityClass + '">' +
+                            '<div class="flex items-center gap-3 mb-4">' +
+                            '<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-bold text-lg">' + escapeHtml(firstChar) + '</div>' +
+                            '<div>' +
+                            '<h4 class="font-bold text-gray-800">' + escapeHtml(subject) + '</h4>' +
+                            '<p class="text-sm text-gray-500">' + escapeHtml(plan.duration || '25分钟') + '</p>' +
+                            '</div>' + completedTag + '</div>' +
+                            '<div class="space-y-3 mb-4">' +
+                            '<div class="flex items-start gap-2">' +
+                            '<i class="fas fa-bullseye text-primary mt-1"></i>' +
+                            '<p class="text-sm text-gray-600">' + escapeHtml(plan.focus || '') + '</p></div>' +
+                            '<div class="flex items-start gap-2">' +
+                            '<i class="fas fa-lightbulb text-accent mt-1"></i>' +
+                            '<p class="text-sm text-gray-600">' + escapeHtml(plan.tips || '') + '</p></div></div>' +
+                            '<div class="flex items-center gap-2">' +
+                            '<button onclick="startStudySession(\'' + subject.replace(/'/g, "\\'") + '\', ' + plan.id + ')" class="flex-1 bg-primary text-white py-2 rounded-xl text-sm hover:bg-primary/90 transition-colors" ' + disabledAttr + '>' + btnText + '</button>' +
+                            '<button onclick="completePlan(' + plan.id + ')" class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors">' + (isCompletedToday ? '已完成' : '完成') + '</button>' +
+                            '</div></div>';
+                    }
                 }
                 container.innerHTML = html;
             } catch (e) {
@@ -6194,6 +6350,17 @@
             var level = document.getElementById('profile-grade-level').value;
             var gradeSelect = document.getElementById('profile-grade');
             gradeSelect.innerHTML = '<option value="">选择具体年级</option>';
+
+            // 大学/研究生显示专业输入框
+            var majorWrapper = document.getElementById('major-input-wrapper');
+            if (majorWrapper) {
+                if (level === '大学' || level === '研究生') {
+                    majorWrapper.classList.remove('hidden');
+                } else {
+                    majorWrapper.classList.add('hidden');
+                }
+            }
+
             var opt;
             if (level === '小学') {
                 ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'].forEach(function(g) {
@@ -6270,6 +6437,10 @@
                 } else {
                     gradeSelect.value = grade;
                 }
+            }
+            if (profile.major) {
+                var majorInput = document.getElementById('profile-major');
+                if (majorInput) majorInput.value = profile.major;
             }
             if (profile.goal) document.getElementById('profile-goal').value = profile.goal;
             if (profile.motto) document.getElementById('profile-motto').value = profile.motto;
