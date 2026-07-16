@@ -3314,15 +3314,6 @@
                     });
                 }
 
-                // 只要有错题数据就不显示空状态（包括全部已掌握的，显示为100）
-                if (labels.length === 0) {
-                    var radarEmpty = document.getElementById('radar-empty-state');
-                    if (radarEmpty) radarEmpty.classList.remove('hidden');
-                    var radarCtx = document.getElementById('radar-chart');
-                    if (radarCtx && radarChart) { try { radarChart.destroy(); } catch(e) {} }
-                    return;
-                }
-
                 // 有数据时隐藏空状态
                 var radarEmptyHide = document.getElementById('radar-empty-state');
                 if (radarEmptyHide) radarEmptyHide.classList.add('hidden');
@@ -3331,6 +3322,7 @@
                 if (!labels) labels = [];
                 if (!data) data = [];
 
+                // 诚信度必须始终存在，哪怕没有任何科目数据
                 labels.push('诚信度');
                 data.push(DataStore.honestyScore || 100);
 
