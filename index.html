@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -267,11 +267,148 @@
             font-size: 14px;
             flex-shrink: 0;
         }
+
+        /* ========== 手机响应式：竖屏底部导航 + 横屏抽屉 ========== */
+        @media (max-width: 768px) {
+            /* 隐藏桌面侧栏 */
+            #left-sidebar {
+                display: none !important;
+            }
+            /* 主内容去偏移，底部留出tab栏高度 */
+            main {
+                margin-left: 0 !important;
+                padding-bottom: 70px;
+            }
+            /* 内容区间距缩小 */
+            .main-content-area {
+                padding: 12px !important;
+            }
+            /* 顶部栏紧凑化 */
+            header .px-8, header > div > div {
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+            header h2 { font-size: 16px !important; }
+            header #header-username, header #header-grade { font-size: 11px !important; }
+            header #header-avatar { width: 32px !important; height: 32px !important; }
+            /* 统计卡片grid：竖屏2列，横屏更多 */
+            .grid.md\:grid-cols-5 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+            .grid.lg\:grid-cols-2,
+            .grid.md\:grid-cols-3 { grid-template-columns: 1fr !important; gap: 8px !important; }
+            .grid.lg\:grid-cols-3 { grid-template-columns: 1fr !important; gap: 8px !important; }
+            .grid.grid-cols-2.gap-3 { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+            .grid.grid-cols-2:not(.gap-3) { grid-template-columns: 1fr !important; gap: 8px !important; }
+            .grid.grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+            /* 卡片内间距缩小 */
+            .card-hover, .bg-white.rounded-2xl { padding: 12px !important; }
+            .card-hover .mb-4 { margin-bottom: 8px !important; }
+            .card-hover .gap-3 { gap: 6px !important; }
+            .card-hover .w-12 { width: 36px !important; height: 36px !important; font-size: 14px !important; }
+            .card-hover .text-2xl { font-size: 18px !important; }
+            .card-hover .text-lg { font-size: 14px !important; }
+            /* 表单输入框全宽 */
+            input[type="text"], input[type="number"], input[type="date"], select, textarea {
+                font-size: 16px !important; /* 防止iOS自动放大 */
+            }
+            /* max-w容器在手机上铺满 */
+            .max-w-5xl, .max-w-4xl, .max-w-3xl { max-width: 100% !important; }
+            /* 按钮组缩小 */
+            .flex.gap-4 > button, .flex.gap-3 > button { padding: 6px 12px !important; font-size: 13px !important; }
+            /* 图表容器高度适配 */
+            .chart-container { height: 220px !important; }
+            /* 弹窗/模态框全屏 */
+            .modal-overlay { padding: 8px !important; }
+            .modal-content { max-width: 100% !important; margin: 0 !important; }
+            /* Toast提示适配 */
+            .toast { max-width: 90vw !important; font-size: 13px !important; }
+        }
+
+        /* 手机横屏（宽 > 高，且宽度 < 768） */
+        @media (max-width: 768px) and (orientation: landscape) {
+            main { padding-bottom: 56px !important; }
+            .grid.md\:grid-cols-5 { grid-template-columns: repeat(3, 1fr) !important; }
+            .grid.lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+            .chart-container { height: 180px !important; }
+            header h2 { font-size: 14px !important; }
+        }
+
+        /* 手机竖屏底部Tab栏 */
+        #mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border-top: 1px solid rgba(229,231,235,0.6);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+            padding: 4px 0 env(safe-area-inset-bottom, 4px);
+        }
+        #mobile-bottom-nav .nav-scroll {
+            display: flex;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 2px 4px;
+        }
+        #mobile-bottom-nav .nav-scroll::-webkit-scrollbar { display: none; }
+        #mobile-bottom-nav .nav-tab {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            padding: 4px 10px;
+            font-size: 10px;
+            color: #6b7280;
+            border-radius: 10px;
+            transition: all 0.2s;
+            min-width: 56px;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        #mobile-bottom-nav .nav-tab i { font-size: 16px; }
+        #mobile-bottom-nav .nav-tab.active {
+            color: #6366f1;
+            background: rgba(99,102,241,0.1);
+        }
+        #mobile-bottom-nav .nav-tab.active i { transform: scale(1.1); }
+        /* 桌面端隐藏手机底部导航 */
+        @media (min-width: 769px) {
+            #mobile-bottom-nav { display: none !important; }
+        }
+        @media (max-width: 768px) {
+            #mobile-bottom-nav { display: block; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="flex h-screen overflow-hidden">
-        <!-- 侧边栏 -->
+        <!-- 手机底部Tab导航栏 -->
+        <nav id="mobile-bottom-nav">
+            <div class="nav-scroll">
+                <button class="nav-tab active" onclick="showSection('dashboard')" data-section="dashboard"><i class="fas fa-chart-line"></i><span>仪表盘</span></button>
+                <button class="nav-tab" onclick="showSection('add-mistake')" data-section="add-mistake"><i class="fas fa-plus-circle"></i><span>添加错题</span></button>
+                <button class="nav-tab" onclick="showSection('mistake-book')" data-section="mistake-book"><i class="fas fa-book-open"></i><span>错题本</span></button>
+                <button class="nav-tab" onclick="showSection('add-exam')" data-section="add-exam"><i class="fas fa-file-alt"></i><span>添加卷子</span></button>
+                <button class="nav-tab" onclick="showSection('plan')" data-section="plan"><i class="fas fa-calendar-alt"></i><span>学习计划</span></button>
+                <button class="nav-tab" onclick="showSection('practice')" data-section="practice"><i class="fas fa-pencil-alt"></i><span>练习</span></button>
+                <button class="nav-tab" onclick="showSection('smart-review')" data-section="smart-review"><i class="fas fa-brain"></i><span>复习</span></button>
+                <button class="nav-tab" onclick="showSection('learning-moments')" data-section="learning-moments"><i class="fas fa-star"></i><span>学习时光</span></button>
+                <button class="nav-tab" onclick="showSection('notes')" data-section="notes"><i class="fas fa-book"></i><span>笔记</span></button>
+                <button class="nav-tab" onclick="showSection('ai-chat')" data-section="ai-chat"><i class="fas fa-robot"></i><span>AI助手</span></button>
+                <button class="nav-tab" onclick="showSection('ai-debate')" data-section="ai-debate"><i class="fas fa-users"></i><span>AI辩论</span></button>
+                <button class="nav-tab" onclick="showSection('profile')" data-section="profile"><i class="fas fa-user-cog"></i><span>个人信息</span></button>
+                <button class="nav-tab" onclick="showSection('favorites')" data-section="favorites"><i class="fas fa-star"></i><span>收藏</span></button>
+                <button class="nav-tab" onclick="showSection('qr-connect')" data-section="qr-connect"><i class="fas fa-qrcode"></i><span>扫码</span></button>
+            </div>
+        </nav>
+
+        <!-- 桌面侧边栏 -->
         <aside class="w-64 bg-white/80 backdrop-blur-xl border-r border-gray-200/60 flex flex-col fixed h-full z-50 shadow-sm" id="left-sidebar">
             <div class="p-6 border-b border-gray-100/80">
                 <div class="flex items-center gap-3">
@@ -396,7 +533,7 @@
                 </div>
             </header>
 
-            <div class="p-8">
+            <div class="p-8 main-content-area">
                 <!-- 仪表盘 -->
                 <section id="dashboard" class="section-content section-hidden section-transition">
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-5 mb-8">
@@ -2517,12 +2654,24 @@
                 }
             }
 
-            var navItems = document.querySelectorAll('.nav-item');
+            var navItems = document.querySelectorAll('#left-sidebar .nav-item');
             for (var j = 0; j < navItems.length; j++) {
                 navItems[j].classList.remove('active');
             }
-            var navBtn = document.querySelector('[data-section="' + sectionId + '"]');
+            var navBtn = document.querySelector('#left-sidebar [data-section="' + sectionId + '"]');
             if (navBtn) navBtn.classList.add('active');
+
+            // 手机底部Tab同步高亮
+            var mobileTabs = document.querySelectorAll('#mobile-bottom-nav .nav-tab');
+            for (var mt = 0; mt < mobileTabs.length; mt++) {
+                mobileTabs[mt].classList.remove('active');
+            }
+            var mobileTab = document.querySelector('#mobile-bottom-nav [data-section="' + sectionId + '"]');
+            if (mobileTab) {
+                mobileTab.classList.add('active');
+                // 滚动到可见
+                mobileTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
 
             var titles = {
                 'dashboard': '仪表盘',
@@ -2538,6 +2687,7 @@
                 'qr-connect': '扫码连接',
                 'ai-chat': 'AI助手',
                 'ai-debate': 'AI辩论',
+                'notes': '笔记',
                 'study-session': '专项学习'
             };
             var titleEl = document.getElementById('page-title');
