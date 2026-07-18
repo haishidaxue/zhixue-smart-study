@@ -1,0 +1,43 @@
+{
+    "name": "智学助手",
+    "short_name": "智学助手",
+    "description": "智能错题管理与学习分析系统 - AI驱动的个性化学习助手",
+    "start_url": "/zhixue-smart-study/?nocache=1",
+    "scope": "/zhixue-smart-study/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#f0f4f8",
+    "theme_color": "#6366f1",
+    "categories": ["education", "productivity"],
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "添加错题",
+            "short_name": "添加错题",
+            "description": "快速添加一道错题",
+            "url": "/zhixue-smart-study/?section=add-mistake",
+            "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "AI助手",
+            "short_name": "AI助手",
+            "description": "与AI学习助手对话",
+            "url": "/zhixue-smart-study/?section=ai-chat",
+            "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
+        }
+    ]
+}
