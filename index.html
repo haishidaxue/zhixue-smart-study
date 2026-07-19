@@ -406,6 +406,7 @@
                 <button class="nav-tab" onclick="showSection('practice')" data-section="practice"><i class="fas fa-pencil-alt"></i><span>练习</span></button>
                 <button class="nav-tab" onclick="showSection('smart-review')" data-section="smart-review"><i class="fas fa-brain"></i><span>复习</span></button>
                 <button class="nav-tab" onclick="showSection('knowledge-graph')" data-section="knowledge-graph"><i class="fas fa-project-diagram"></i><span>图谱</span></button>
+                <button class="nav-tab" onclick="showSection('mistake-clusters')" data-section="mistake-clusters"><i class="fas fa-object-group"></i><span>聚类</span></button>
                 <button class="nav-tab" onclick="showSection('learning-moments')" data-section="learning-moments"><i class="fas fa-star"></i><span>学习时光</span></button>
                 <button class="nav-tab" onclick="showSection('notes')" data-section="notes"><i class="fas fa-book"></i><span>笔记</span></button>
                 <button class="nav-tab" onclick="showSection('ai-chat')" data-section="ai-chat"><i class="fas fa-robot"></i><span>AI助手</span></button>
@@ -462,6 +463,10 @@
                 <button onclick="showSection('knowledge-graph')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-all" data-section="knowledge-graph">
                     <i class="fas fa-project-diagram w-5"></i>
                     <span>知识图谱</span>
+                </button>
+                <button onclick="showSection('mistake-clusters')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-all" data-section="mistake-clusters">
+                    <i class="fas fa-object-group w-5"></i>
+                    <span>错题聚类</span>
                 </button>
                 <button onclick="showSection('learning-moments')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-all" data-section="learning-moments">
                     <i class="fas fa-star w-5"></i>
@@ -539,6 +544,10 @@
                             <div>
                                 <p class="text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors" id="header-username">学习者</p>
                                 <p class="text-[11px] text-gray-400 font-medium" id="header-grade">高级会员</p>
+                            </div>
+                            <div id="sync-indicator" class="ml-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-50">
+                                <i class="fas fa-link-slash text-gray-400"></i>
+                                <span class="text-xs text-gray-400">仅本设备</span>
                             </div>
                         </div>
                     </div>
@@ -782,6 +791,34 @@
                                 <button onclick="showSection('add-mistake')" class="mt-4 px-5 py-2.5 bg-primary text-white text-sm rounded-xl hover:bg-primary/90 transition-colors shadow-sm">去添加错题</button>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- 错题相似度聚类 -->
+                <section id="mistake-clusters" class="section-content section-hidden section-transition">
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">错题智能聚类</h3>
+                                <p class="text-sm text-gray-500 mt-1">基于TF-IDF文本相似度自动发现本质相同的题目，合并复习</p>
+                            </div>
+                            <button onclick="renderClusters()" class="px-4 py-2 bg-primary text-white rounded-xl text-sm hover:bg-primary/90 transition-colors"><i class="fas fa-sync-alt mr-1"></i>重新分析</button>
+                        </div>
+                        <div id="cluster-empty" class="hidden bg-white rounded-2xl shadow-sm p-12 border border-gray-50 text-center">
+                            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" class="mx-auto mb-4" style="opacity:0.5">
+                                <rect x="10" y="10" width="80" height="80" rx="16" fill="#f0f4f8"/>
+                                <circle cx="35" cy="40" r="8" fill="#6366f1" opacity="0.6"/>
+                                <circle cx="65" cy="40" r="8" fill="#6366f1" opacity="0.6"/>
+                                <circle cx="50" cy="65" r="8" fill="#f59e0b" opacity="0.6"/>
+                                <path d="M43 40 L57 40" stroke="#6366f1" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                                <path d="M39 46 L47 60" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
+                                <path d="M61 46 L53 60" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
+                                <text x="50" y="92" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="sans-serif">SIMILARITY CLUSTER</text>
+                            </svg>
+                            <p class="text-sm text-gray-400">还没有错题数据</p>
+                            <p class="text-xs text-gray-300 mt-1">添加错题后将自动进行相似度分析</p>
+                        </div>
+                        <div id="cluster-container"></div>
                     </div>
                 </section>
 
@@ -1928,6 +1965,8 @@
                 localStorage.setItem('honestyScore', this.honestyScore.toString());
                 localStorage.setItem('practiceRecords', JSON.stringify(this.practiceRecords));
                 localStorage.setItem('notes', JSON.stringify(this.notes));
+                // 多端同步通知
+                try { if (typeof SyncEngine !== 'undefined' && SyncEngine.broadcast) SyncEngine.notifyChange('data-changed'); } catch(e) {}
             }
         };
 
@@ -2755,6 +2794,7 @@
                 'ai-debate': 'AI辩论',
                 'notes': '笔记',
                 'knowledge-graph': '知识图谱',
+                'mistake-clusters': '错题聚类',
                 'study-session': '专项学习'
             };
             var titleEl = document.getElementById('page-title');
@@ -2789,6 +2829,12 @@
                 setTimeout(function() {
                     try { updateRadarChart(); } catch(e) { console.log('updateRadarChart error:', e); }
                 }, 150);
+            }
+
+            if (sectionId === 'mistake-clusters') {
+                setTimeout(function() {
+                    try { renderClusters(); } catch(e) { console.log('cluster render error:', e); }
+                }, 200);
             }
 
             if (sectionId === 'knowledge-graph') {
@@ -3877,6 +3923,412 @@
                 console.log('generateStudyPlan error:', e);
                 showToast('计划生成出错，请检查个人信息是否已设置年级', 'error');
             }
+        }
+
+        // ========== TF-IDF 错题相似度聚类引擎 ==========
+        var SimilarityEngine = {
+            // 中文分词（简化：按字/词切分）
+            tokenize: function(text) {
+                if (!text) return [];
+                // 移除HTML标签和特殊字符
+                var clean = text.replace(/<[^>]*>/g, '').replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s]/g, ' ').toLowerCase();
+                // 中文按2-gram切分 + 英文按单词切分
+                var tokens = [];
+                // 提取英文单词
+                var engWords = clean.match(/[a-zA-Z]{2,}/g);
+                if (engWords) tokens = tokens.concat(engWords);
+                // 中文2-gram
+                var chinese = clean.match(/[\u4e00-\u9fa5]+/g);
+                if (chinese) {
+                    chinese.forEach(function(seg) {
+                        for (var i = 0; i < seg.length; i++) tokens.push(seg.charAt(i));
+                        for (var i = 0; i < seg.length - 1; i++) tokens.push(seg.substr(i, 2));
+                        if (seg.length >= 3) {
+                            for (var i = 0; i < seg.length - 2; i++) tokens.push(seg.substr(i, 3));
+                        }
+                    });
+                }
+                // 数字
+                var nums = clean.match(/\d+/g);
+                if (nums) tokens = tokens.concat(nums);
+                return tokens;
+            },
+
+            // 计算词频TF
+            termFreq: function(tokens) {
+                var freq = {};
+                tokens.forEach(function(t) { freq[t] = (freq[t] || 0) + 1; });
+                return freq;
+            },
+
+            // 计算IDF（逆文档频率）
+            idf: function(documents) {
+                var n = documents.length;
+                var df = {};
+                documents.forEach(function(doc) {
+                    var seen = {};
+                    doc.tokens.forEach(function(t) {
+                        if (!seen[t]) { df[t] = (df[t] || 0) + 1; seen[t] = true; }
+                    });
+                });
+                var idf = {};
+                Object.keys(df).forEach(function(t) {
+                    idf[t] = Math.log((n + 1) / (df[t] + 1)) + 1;
+                });
+                return idf;
+            },
+
+            // 计算TF-IDF向量
+            tfidfVector: function(tf, idf) {
+                var vec = {};
+                Object.keys(tf).forEach(function(t) {
+                    vec[t] = tf[t] * (idf[t] || 1);
+                });
+                return vec;
+            },
+
+            // 余弦相似度
+            cosineSim: function(vecA, vecB) {
+                var dot = 0, magA = 0, magB = 0;
+                Object.keys(vecA).forEach(function(t) {
+                    if (vecB[t]) dot += vecA[t] * vecB[t];
+                    magA += vecA[t] * vecA[t];
+                });
+                Object.keys(vecB).forEach(function(t) {
+                    magB += vecB[t] * vecB[t];
+                });
+                if (magA === 0 || magB === 0) return 0;
+                return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+            },
+
+            // 综合相似度（文本+元数据）
+            computeSimilarity: function(mA, mB) {
+                var textA = (mA.question || '') + ' ' + (mA.correctAnswer || '') + ' ' + (mA.reason || '');
+                var textB = (mB.question || '') + ' ' + (mB.correctAnswer || '') + ' ' + (mB.reason || '');
+                var tokensA = this.tokenize(textA);
+                var tokensB = this.tokenize(textB);
+
+                // 科目加成
+                var subjectBonus = (mA.subject === mB.subject) ? 0.15 : 0;
+                // 题型加成
+                var typeBonus = (mA.type === mB.type) ? 0.1 : 0;
+
+                // 如果文本太短，只靠元数据
+                if (textA.length < 4 && textB.length < 4) {
+                    return subjectBonus + typeBonus;
+                }
+
+                var tfA = this.termFreq(tokensA);
+                var tfB = this.termFreq(tokensB);
+                var docs = [{ tokens: tokensA }, { tokens: tokensB }];
+                var idf = this.idf(docs);
+                var vecA = this.tfidfVector(tfA, idf);
+                var vecB = this.tfidfVector(tfB, idf);
+                var textSim = this.cosineSim(vecA, vecB);
+
+                return Math.min(1, textSim + subjectBonus + typeBonus);
+            },
+
+            // 对所有错题进行聚类
+            cluster: function(mistakes, threshold) {
+                threshold = threshold || 0.45;
+                var clusters = [];
+                var assigned = {};
+
+                for (var i = 0; i < mistakes.length; i++) {
+                    if (assigned[i]) continue;
+                    var cluster = { representative: mistakes[i], members: [mistakes[i]], indices: [i] };
+                    assigned[i] = true;
+
+                    for (var j = i + 1; j < mistakes.length; j++) {
+                        if (assigned[j]) continue;
+                        var sim = this.computeSimilarity(mistakes[i], mistakes[j]);
+                        if (sim >= threshold) {
+                            cluster.members.push(mistakes[j]);
+                            cluster.indices.push(j);
+                            assigned[j] = true;
+                        }
+                    }
+                    clusters.push(cluster);
+                }
+                return clusters;
+            },
+
+            // 找每道错题的最相似错题Top-N
+            findSimilar: function(mistakeId, topN) {
+                topN = topN || 3;
+                var mistakes = DataStore.mistakes;
+                var idx = -1;
+                for (var i = 0; i < mistakes.length; i++) {
+                    if (mistakes[i].id === mistakeId) { idx = i; break; }
+                }
+                if (idx === -1) return [];
+
+                var results = [];
+                for (var j = 0; j < mistakes.length; j++) {
+                    if (j === idx) continue;
+                    var sim = this.computeSimilarity(mistakes[idx], mistakes[j]);
+                    results.push({ mistake: mistakes[j], similarity: sim });
+                }
+                results.sort(function(a, b) { return b.similarity - a.similarity; });
+                return results.slice(0, topN);
+            }
+        };
+
+        // 聚类结果缓存
+        var cachedClusters = null;
+        var cachedClusterTime = 0;
+
+        function getMistakeClusters(forceRefresh) {
+            try {
+                if (!forceRefresh && cachedClusters && Date.now() - cachedClusterTime < 60000) {
+                    return cachedClusters;
+                }
+                var unmastered = DataStore.mistakes.filter(function(m) { return !m.mastered; });
+                cachedClusters = SimilarityEngine.cluster(unmastered, 0.4);
+                cachedClusterTime = Date.now();
+                return cachedClusters;
+            } catch (e) {
+                console.log('getMistakeClusters error:', e);
+                return [];
+            }
+        }
+
+        function renderClusters() {
+            try {
+                var container = document.getElementById('cluster-container');
+                var emptyEl = document.getElementById('cluster-empty');
+                if (!container) return;
+
+                var clusters = getMistakeClusters(true);
+                if (DataStore.mistakes.length === 0) {
+                    if (emptyEl) emptyEl.classList.remove('hidden');
+                    container.innerHTML = '';
+                    return;
+                }
+                if (emptyEl) emptyEl.classList.add('hidden');
+
+                // 过滤只有1个成员的聚类，按成员数降序
+                var multiClusters = clusters.filter(function(c) { return c.members.length > 1; });
+                multiClusters.sort(function(a, b) { return b.members.length - a.members.length; });
+
+                // 聚类统计
+                var singleCount = clusters.filter(function(c) { return c.members.length === 1; }).length;
+                var html = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">';
+                html += '<div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100"><p class="text-xs text-gray-500 font-medium">总错题数</p><p class="text-2xl font-bold text-gray-800 mt-1">' + DataStore.mistakes.length + '</p></div>';
+                html += '<div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100"><p class="text-xs text-gray-500 font-medium">发现相似组</p><p class="text-2xl font-bold text-amber-600 mt-1">' + multiClusters.length + '</p></div>';
+                html += '<div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100"><p class="text-xs text-gray-500 font-medium">独立错题</p><p class="text-2xl font-bold text-green-600 mt-1">' + singleCount + '</p></div>';
+                html += '</div>';
+
+                if (multiClusters.length === 0) {
+                    html += '<div class="text-center py-12 text-gray-400"><i class="fas fa-check-circle text-4xl text-green-300 mb-3 block"></i><p>暂未发现相似的错题</p><p class="text-xs mt-1">添加更多错题后将自动检测相似性</p></div>';
+                    container.innerHTML = html;
+                    return;
+                }
+
+                // 渲染每个聚类组
+                html += '<h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-layer-group text-indigo-500 mr-2"></i>相似错题组（' + multiClusters.length + '组）</h4>';
+                html += '<div class="space-y-4">';
+                multiClusters.slice(0, 20).forEach(function(cluster, ci) {
+                    var subj = cluster.representative.subject || '综合';
+                    var color = getSubjectColor(subj);
+                    var repText = (cluster.representative.question || '').substring(0, 80);
+                    html += '<div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-50">';
+                    html += '<div class="flex items-center justify-between mb-3">';
+                    html += '<div class="flex items-center gap-2"><span class="px-2 py-1 rounded-lg text-xs font-bold text-white" style="background:' + color + '">' + subj + '</span>';
+                    html += '<span class="px-2 py-1 rounded-lg text-xs bg-indigo-50 text-indigo-600">组 ' + (ci + 1) + '</span>';
+                    html += '<span class="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600">' + cluster.members.length + ' 道相似</span></div>';
+                    html += '<button onclick="mergeClusterMastered(' + ci + ')" class="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"><i class="fas fa-check-double mr-1"></i>一键掌握本组</button>';
+                    html += '</div>';
+                    html += '<div class="space-y-2">';
+                    cluster.members.forEach(function(m, mi) {
+                        var qText = (m.question || '').substring(0, 60) || '【图片题】';
+                        var isMastered = m.mastered;
+                        html += '<div class="flex items-center gap-3 p-3 rounded-xl ' + (isMastered ? 'bg-green-50' : 'bg-gray-50') + '">';
+                        html += '<span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ' + (mi === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500') + '">' + (mi + 1) + '</span>';
+                        html += '<div class="flex-1 min-w-0"><p class="text-sm text-gray-700 truncate">' + escapeHtml(qText) + '</p>';
+                        html += '<p class="text-xs text-gray-400">' + escapeHtml(m.type || '') + (m.tags && m.tags.length ? ' · ' + m.tags.join(', ') : '') + '</p></div>';
+                        if (isMastered) html += '<span class="text-green-500 text-xs"><i class="fas fa-check-circle"></i></span>';
+                        html += '</div>';
+                    });
+                    html += '</div></div>';
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                console.log('renderClusters error:', e);
+            }
+        }
+
+        function mergeClusterMastered(clusterIndex) {
+            try {
+                var clusters = getMistakeClusters(false);
+                if (!clusters[clusterIndex]) return;
+                var count = 0;
+                clusters[clusterIndex].indices.forEach(function(idx) {
+                    var unmastered = DataStore.mistakes.filter(function(m) { return !m.mastered; });
+                    if (unmastered[idx]) {
+                        var origId = unmastered[idx].id;
+                        for (var i = 0; i < DataStore.mistakes.length; i++) {
+                            if (DataStore.mistakes[i].id === origId) {
+                                DataStore.mistakes[i].mastered = true;
+                                count++;
+                                break;
+                            }
+                        }
+                    }
+                });
+                DataStore.save();
+                cachedClusters = null;
+                renderClusters();
+                try { updateRadarChart(); } catch(e) {}
+                try { updateDashboard(); } catch(e) {}
+                if (count > 0) showToast('已标记' + count + '道相似错题为已掌握', 'success');
+            } catch (e) {
+                console.log('mergeClusterMastered error:', e);
+                showToast('操作失败', 'error');
+            }
+        }
+
+        // ========== 多端实时同步引擎（BroadcastChannel + Storage事件） ==========
+        var SyncEngine = {
+            channel: null,
+            syncId: null,
+            isMaster: false,
+            lastSyncSeq: 0,
+            listeners: [],
+
+            init: function() {
+                try {
+                    this.syncId = Math.random().toString(36).substr(2, 8);
+                    // 尝试BroadcastChannel（同源跨标签页同步）
+                    if ('BroadcastChannel' in window) {
+                        this.channel = new BroadcastChannel('zhixue-sync');
+                        this.channel.onmessage = function(e) {
+                            if (e.data && e.data.syncId !== SyncEngine.syncId) {
+                                SyncEngine.onRemoteChange(e.data);
+                            }
+                        };
+                    }
+                    // Storage事件监听（跨标签页fallback）
+                    window.addEventListener('storage', function(e) {
+                        if (e.key && e.newValue !== null) {
+                            SyncEngine.onStorageChange(e.key, e.newValue);
+                        }
+                    });
+                    // 定期广播心跳
+                    setInterval(function() {
+                        SyncEngine.broadcast({ type: 'heartbeat', syncId: SyncEngine.syncId, timestamp: Date.now() });
+                    }, 5000);
+                    console.log('SyncEngine init, id=' + this.syncId);
+                } catch (e) {
+                    console.log('SyncEngine init error:', e);
+                }
+            },
+
+            broadcast: function(data) {
+                try {
+                    data.syncId = this.syncId;
+                    data.seq = ++this.lastSyncSeq;
+                    data.timestamp = Date.now();
+                    if (this.channel) {
+                        this.channel.postMessage(data);
+                    }
+                } catch (e) {}
+            },
+
+            onRemoteChange: function(data) {
+                if (!data || !data.type) return;
+                try {
+                    switch (data.type) {
+                        case 'heartbeat':
+                            // 其他标签页在线
+                            break;
+                        case 'mistake-added':
+                        case 'mistake-updated':
+                        case 'mistake-deleted':
+                        case 'mastered-changed':
+                            // 重新从localStorage加载
+                            this.reloadFromStorage();
+                            this.triggerListeners('data-changed', data);
+                            break;
+                        case 'full-sync-request':
+                            // 回复当前状态
+                            this.broadcast({ type: 'full-sync-response', mistakes: DataStore.mistakes.length, exams: DataStore.exams.length });
+                            break;
+                    }
+                } catch (e) {}
+            },
+
+            onStorageChange: function(key, newValue) {
+                try {
+                    // 从localStorage重新加载对应数据
+                    if (key === 'mistakes') {
+                        DataStore.mistakes = JSON.parse(newValue || '[]');
+                        this.triggerListeners('mistakes-changed');
+                    } else if (key === 'exams') {
+                        DataStore.exams = JSON.parse(newValue || '[]');
+                        this.triggerListeners('exams-changed');
+                    } else if (key === 'plans') {
+                        DataStore.plans = JSON.parse(newValue || '[]');
+                        this.triggerListeners('plans-changed');
+                    } else if (key === 'reminders') {
+                        DataStore.reminders = JSON.parse(newValue || '[]');
+                        this.triggerListeners('reminders-changed');
+                    } else if (key === 'notes') {
+                        DataStore.notes = JSON.parse(newValue || '[]');
+                        this.triggerListeners('notes-changed');
+                    } else if (key === 'chatHistory') {
+                        DataStore.chatHistory = JSON.parse(newValue || '[]');
+                    }
+                    // 刷新UI
+                    this.triggerListeners('data-changed');
+                } catch (e) {}
+            },
+
+            reloadFromStorage: function() {
+                DataStore.mistakes = JSON.parse(localStorage.getItem('mistakes') || '[]');
+                DataStore.exams = JSON.parse(localStorage.getItem('exams') || '[]');
+                DataStore.reminders = JSON.parse(localStorage.getItem('reminders') || '[]');
+                DataStore.plans = JSON.parse(localStorage.getItem('plans') || '[]');
+                DataStore.notes = JSON.parse(localStorage.getItem('notes') || '[]');
+                DataStore.chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+                DataStore.studyDays = parseInt(localStorage.getItem('studyDays') || '0');
+                DataStore.streakDays = parseInt(localStorage.getItem('streakDays') || '0');
+                DataStore.userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                DataStore.honestyScore = parseInt(localStorage.getItem('honestyScore') || '100');
+            },
+
+            notifyChange: function(changeType) {
+                this.broadcast({ type: changeType || 'data-changed' });
+            },
+
+            on: function(callback) {
+                this.listeners.push(callback);
+            },
+
+            triggerListeners: function(eventType, data) {
+                var self = this;
+                this.listeners.forEach(function(cb) {
+                    try { cb(eventType, data); } catch(e) {}
+                });
+            }
+        };
+
+        // 同步状态UI更新
+        var syncOnlineDevices = 0;
+        function updateSyncUI() {
+            try {
+                var indicator = document.getElementById('sync-indicator');
+                if (!indicator) return;
+                if (syncOnlineDevices > 0) {
+                    indicator.innerHTML = '<i class="fas fa-link text-green-500"></i> <span class="text-xs text-green-600">' + syncOnlineDevices + '台设备在线</span>';
+                    indicator.title = syncOnlineDevices + '台设备正在同步';
+                } else {
+                    indicator.innerHTML = '<i class="fas fa-link-slash text-gray-400"></i> <span class="text-xs text-gray-400">仅本设备</span>';
+                    indicator.title = '当前仅本设备在线';
+                }
+            } catch(e) {}
         }
 
         // ========== 知识图谱 D3.js 力导向图 ==========
@@ -7969,6 +8421,39 @@
                     }).catch(function(err) {
                         console.log('SW register fail:', err);
                     });
+                }
+            } catch(e) {}
+
+            // 多端同步引擎初始化
+            try {
+                SyncEngine.init();
+                SyncEngine.on(function(eventType, data) {
+                    // 远端数据变化时自动刷新UI
+                    try {
+                        if (eventType === 'data-changed' || eventType === 'mistakes-changed') {
+                            updateDashboard();
+                            updateRadarChart();
+                            updateDoughnutChart();
+                        }
+                    } catch(e) {}
+                });
+                // 心跳监测在线设备数
+                var knownDevices = {};
+                var origBC = SyncEngine.channel;
+                if (origBC) {
+                    var origOnMsg = origBC.onmessage;
+                    origBC.onmessage = function(e) {
+                        if (e.data && e.data.type === 'heartbeat' && e.data.syncId !== SyncEngine.syncId) {
+                            knownDevices[e.data.syncId] = Date.now();
+                            // 清理超过15秒无心跳的设备
+                            Object.keys(knownDevices).forEach(function(id) {
+                                if (Date.now() - knownDevices[id] > 15000) delete knownDevices[id];
+                            });
+                            syncOnlineDevices = Object.keys(knownDevices).length;
+                            updateSyncUI();
+                        }
+                        if (origOnMsg) origOnMsg.call(origBC, e);
+                    };
                 }
             } catch(e) {}
             checkReminders(); // 立即检查一次
