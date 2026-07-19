@@ -4094,6 +4094,9 @@
             }
         }
 
+        // 用于追踪全局聚类索引（含独立错题）
+        var allClustersCache = null;
+
         function renderClusters() {
             try {
                 var container = document.getElementById('cluster-container');
@@ -4101,6 +4104,7 @@
                 if (!container) return;
 
                 var clusters = getMistakeClusters(true);
+                allClustersCache = clusters;
                 if (DataStore.mistakes.length === 0) {
                     if (emptyEl) emptyEl.classList.remove('hidden');
                     container.innerHTML = '';
@@ -4108,86 +4112,213 @@
                 }
                 if (emptyEl) emptyEl.classList.add('hidden');
 
-                // 过滤只有1个成员的聚类，按成员数降序
                 var multiClusters = clusters.filter(function(c) { return c.members.length > 1; });
+                var singleClusters = clusters.filter(function(c) { return c.members.length === 1; });
                 multiClusters.sort(function(a, b) { return b.members.length - a.members.length; });
 
-                // 聚类统计
-                var singleCount = clusters.filter(function(c) { return c.members.length === 1; }).length;
+                // 统计卡片
                 var html = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">';
-                html += '<div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100"><p class="text-xs text-gray-500 font-medium">总错题数</p><p class="text-2xl font-bold text-gray-800 mt-1">' + DataStore.mistakes.length + '</p></div>';
-                html += '<div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100"><p class="text-xs text-gray-500 font-medium">发现相似组</p><p class="text-2xl font-bold text-amber-600 mt-1">' + multiClusters.length + '</p></div>';
-                html += '<div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100"><p class="text-xs text-gray-500 font-medium">独立错题</p><p class="text-2xl font-bold text-green-600 mt-1">' + singleCount + '</p></div>';
+                html += '<div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'all\')"><p class="text-xs text-gray-500 font-medium">总错题数</p><p class="text-2xl font-bold text-gray-800 mt-1">' + DataStore.mistakes.length + '</p><p class="text-xs text-indigo-400 mt-1">点击查看全部</p></div>';
+                html += '<div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'multi\')"><p class="text-xs text-gray-500 font-medium">发现相似组</p><p class="text-2xl font-bold text-amber-600 mt-1">' + multiClusters.length + '</p><p class="text-xs text-amber-400 mt-1">点击查看详情</p></div>';
+                html += '<div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'single\')"><p class="text-xs text-gray-500 font-medium">独立错题</p><p class="text-2xl font-bold text-green-600 mt-1">' + singleClusters.length + '</p><p class="text-xs text-green-400 mt-1">点击查看详情</p></div>';
                 html += '</div>';
 
-                if (multiClusters.length === 0) {
-                    html += '<div class="text-center py-12 text-gray-400"><i class="fas fa-check-circle text-4xl text-green-300 mb-3 block"></i><p>暂未发现相似的错题</p><p class="text-xs mt-1">添加更多错题后将自动检测相似性</p></div>';
-                    container.innerHTML = html;
-                    return;
-                }
-
-                // 渲染每个聚类组
+                // 相似组
                 html += '<h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-layer-group text-indigo-500 mr-2"></i>相似错题组（' + multiClusters.length + '组）</h4>';
-                html += '<div class="space-y-4">';
-                multiClusters.slice(0, 20).forEach(function(cluster, ci) {
-                    var subj = cluster.representative.subject || '综合';
-                    var color = getSubjectColor(subj);
-                    var repText = (cluster.representative.question || '').substring(0, 80);
-                    html += '<div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-50">';
-                    html += '<div class="flex items-center justify-between mb-3">';
-                    html += '<div class="flex items-center gap-2"><span class="px-2 py-1 rounded-lg text-xs font-bold text-white" style="background:' + color + '">' + subj + '</span>';
-                    html += '<span class="px-2 py-1 rounded-lg text-xs bg-indigo-50 text-indigo-600">组 ' + (ci + 1) + '</span>';
-                    html += '<span class="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600">' + cluster.members.length + ' 道相似</span></div>';
-                    html += '<button onclick="mergeClusterMastered(' + ci + ')" class="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"><i class="fas fa-check-double mr-1"></i>一键掌握本组</button>';
-                    html += '</div>';
-                    html += '<div class="space-y-2">';
-                    cluster.members.forEach(function(m, mi) {
-                        var qText = (m.question || '').substring(0, 60) || '【图片题】';
-                        var isMastered = m.mastered;
-                        html += '<div class="flex items-center gap-3 p-3 rounded-xl ' + (isMastered ? 'bg-green-50' : 'bg-gray-50') + '">';
-                        html += '<span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ' + (mi === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500') + '">' + (mi + 1) + '</span>';
-                        html += '<div class="flex-1 min-w-0"><p class="text-sm text-gray-700 truncate">' + escapeHtml(qText) + '</p>';
-                        html += '<p class="text-xs text-gray-400">' + escapeHtml(m.type || '') + (m.tags && m.tags.length ? ' · ' + m.tags.join(', ') : '') + '</p></div>';
-                        if (isMastered) html += '<span class="text-green-500 text-xs"><i class="fas fa-check-circle"></i></span>';
-                        html += '</div>';
-                    });
-                    html += '</div></div>';
+                html += '<div class="space-y-4 mb-8">';
+                multiClusters.forEach(function(cluster, ci) {
+                    var globalIdx = clusters.indexOf(cluster);
+                    html += buildClusterCard(cluster, globalIdx, ci, true);
                 });
                 html += '</div>';
+
+                // 独立错题
+                html += '<h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-cube text-green-500 mr-2"></i>独立错题（' + singleClusters.length + '道）</h4>';
+                html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">';
+                singleClusters.forEach(function(cluster, si) {
+                    var globalIdx = clusters.indexOf(cluster);
+                    html += buildClusterCard(cluster, globalIdx, si, false);
+                });
+                html += '</div>';
+
                 container.innerHTML = html;
             } catch (e) {
                 console.log('renderClusters error:', e);
             }
         }
 
-        function mergeClusterMastered(clusterIndex) {
+        function buildClusterCard(cluster, globalIdx, displayIdx, isMulti) {
+            var subj = cluster.representative.subject || '综合';
+            var color = getSubjectColor(subj);
+            var firstQ = (cluster.representative.question || '').substring(0, 80) || '【图片题】';
+            var firstId = cluster.representative.id || '';
+
+            var html = '<div class="cluster-card bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">';
+            // 头部
+            html += '<div class="p-5 cursor-pointer hover:bg-gray-50 transition-colors" onclick="toggleClusterDetail(' + globalIdx + ')">';
+            html += '<div class="flex items-center justify-between">';
+            html += '<div class="flex items-center gap-2"><span class="px-2 py-1 rounded-lg text-xs font-bold text-white" style="background:' + color + '">' + escapeHtml(subj) + '</span>';
+            if (isMulti) {
+                html += '<span class="px-2 py-1 rounded-lg text-xs bg-indigo-50 text-indigo-600">组 ' + (displayIdx + 1) + '</span>';
+                html += '<span class="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600">' + cluster.members.length + ' 道相似</span>';
+            } else {
+                html += '<span class="px-2 py-1 rounded-lg text-xs bg-gray-100 text-gray-500">独立</span>';
+            }
+            html += '</div>';
+            html += '<i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="cluster-arrow-' + globalIdx + '"></i>';
+            html += '</div>';
+            html += '<p class="text-sm text-gray-600 mt-2 truncate">' + escapeHtml(firstQ) + '</p>';
+            html += '</div>';
+            // 展开详情区域（默认隐藏）
+            html += '<div class="hidden border-t border-gray-100" id="cluster-detail-' + globalIdx + '">';
+            html += '<div class="p-4 space-y-3">';
+            cluster.members.forEach(function(m, mi) {
+                var mId = m.id || '';
+                var qText = (m.question || '') || '【图片题】';
+                var isMastered = m.mastered;
+                html += '<div class="p-4 rounded-xl ' + (isMastered ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-100') + '">';
+                html += '<div class="flex items-start justify-between mb-2">';
+                html += '<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ' + (mi === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500') + '">' + (mi + 1) + '</span>';
+                if (isMastered) html += '<span class="px-2 py-0.5 rounded-full text-xs bg-green-200 text-green-700">已掌握</span>';
+                html += '<span class="text-xs text-gray-400">' + escapeHtml(m.type || '') + '</span></div>';
+                html += '<div class="flex gap-1">';
+                if (!isMastered) html += '<button onclick="event.stopPropagation();masterSingleFromCluster(\'' + mId + '\')" class="px-2 py-1 text-xs bg-green-50 text-green-600 rounded-lg hover:bg-green-100"><i class="fas fa-check mr-1"></i>掌握</button>';
+                html += '</div></div>';
+                html += '<div class="text-sm text-gray-700 mb-2" style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(qText) + '</div>';
+                if (m.wrongAnswer) html += '<div class="text-xs text-red-400 mb-1"><strong>错误答案：</strong>' + escapeHtml(m.wrongAnswer) + '</div>';
+                if (m.correctAnswer) html += '<div class="text-xs text-green-500 mb-1"><strong>正确答案：</strong>' + escapeHtml(m.correctAnswer) + '</div>';
+                if (m.reason) html += '<div class="text-xs text-gray-400 mt-1" style="white-space:pre-wrap;word-break:break-word;"><strong>解析：</strong>' + escapeHtml(m.reason) + '</div>';
+                if (m.tags && m.tags.length) html += '<div class="flex flex-wrap gap-1 mt-2">' + m.tags.map(function(t) { return '<span class="px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-500">' + escapeHtml(t) + '</span>'; }).join('') + '</div>';
+                html += '</div>';
+            });
+            // 底部操作栏（仅多成员组显示）
+            if (isMulti && cluster.members.length > 1) {
+                html += '<div class="flex items-center gap-2 pt-2 border-t border-gray-100">';
+                html += '<button onclick="event.stopPropagation();mergeClusterToFirst(' + globalIdx + ')" class="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"><i class="fas fa-compress-arrows-alt mr-1"></i>合并为一条</button>';
+                html += '<button onclick="event.stopPropagation();mergeClusterMastered(' + globalIdx + ')" class="flex-1 px-4 py-2.5 bg-green-50 text-green-600 rounded-xl text-sm font-medium hover:bg-green-100 transition-colors"><i class="fas fa-check-double mr-1"></i>全部掌握</button>';
+                html += '</div>';
+            }
+            html += '</div></div></div>';
+            return html;
+        }
+
+        function toggleClusterDetail(globalIdx) {
             try {
-                var clusters = getMistakeClusters(false);
-                if (!clusters[clusterIndex]) return;
-                var count = 0;
-                clusters[clusterIndex].indices.forEach(function(idx) {
-                    var unmastered = DataStore.mistakes.filter(function(m) { return !m.mastered; });
-                    if (unmastered[idx]) {
-                        var origId = unmastered[idx].id;
-                        for (var i = 0; i < DataStore.mistakes.length; i++) {
-                            if (DataStore.mistakes[i].id === origId) {
-                                DataStore.mistakes[i].mastered = true;
-                                count++;
-                                break;
-                            }
-                        }
+                var detail = document.getElementById('cluster-detail-' + globalIdx);
+                var arrow = document.getElementById('cluster-arrow-' + globalIdx);
+                if (!detail) return;
+                if (detail.classList.contains('hidden')) {
+                    detail.classList.remove('hidden');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    detail.classList.add('hidden');
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                }
+            } catch(e) {}
+        }
+
+        function masterSingleFromCluster(mistakeId) {
+            try {
+                for (var i = 0; i < DataStore.mistakes.length; i++) {
+                    if (DataStore.mistakes[i].id === mistakeId) {
+                        DataStore.mistakes[i].mastered = true;
+                        break;
                     }
-                });
+                }
                 DataStore.save();
                 cachedClusters = null;
                 renderClusters();
                 try { updateRadarChart(); } catch(e) {}
                 try { updateDashboard(); } catch(e) {}
-                if (count > 0) showToast('已标记' + count + '道相似错题为已掌握', 'success');
-            } catch (e) {
-                console.log('mergeClusterMastered error:', e);
+                showToast('已标记为掌握', 'success');
+            } catch(e) {
                 showToast('操作失败', 'error');
             }
+        }
+
+        function mergeClusterToFirst(clusterGlobalIdx) {
+            try {
+                var clusters = allClustersCache || getMistakeClusters(false);
+                if (!clusters[clusterGlobalIdx]) return;
+                var cluster = clusters[clusterGlobalIdx];
+                if (cluster.members.length < 2) return;
+
+                // 把所有成员的错题内容合并到第一条（代表题），然后删除其余
+                var repId = cluster.members[0].id;
+                var mergedQuestion = cluster.members[0].question || '';
+                var mergedWrong = cluster.members[0].wrongAnswer || '';
+                var mergedCorrect = cluster.members[0].correctAnswer || '';
+                var mergedReason = cluster.members[0].reason || '';
+                var mergedTags = cluster.members[0].tags ? cluster.members[0].tags.slice() : [];
+
+                for (var mi = 1; mi < cluster.members.length; mi++) {
+                    var m = cluster.members[mi];
+                    if (m.question && m.question !== mergedQuestion) {
+                        mergedQuestion += '\n---\n' + m.question;
+                    }
+                    if (m.wrongAnswer && m.wrongAnswer !== mergedWrong) {
+                        mergedWrong += '\n' + m.wrongAnswer;
+                    }
+                    if (m.correctAnswer && m.correctAnswer !== mergedCorrect) {
+                        mergedCorrect += '\n' + m.correctAnswer;
+                    }
+                    if (m.reason && m.reason !== mergedReason) {
+                        mergedReason += '\n' + m.reason;
+                    }
+                    if (m.tags && m.tags.length) {
+                        m.tags.forEach(function(t) {
+                            if (mergedTags.indexOf(t) === -1) mergedTags.push(t);
+                        });
+                    }
+                    // 删除其余错题
+                    var delId = m.id;
+                    DataStore.mistakes = DataStore.mistakes.filter(function(x) { return x.id !== delId; });
+                }
+
+                // 更新代表题的合并内容
+                for (var i = 0; i < DataStore.mistakes.length; i++) {
+                    if (DataStore.mistakes[i].id === repId) {
+                        DataStore.mistakes[i].question = mergedQuestion;
+                        DataStore.mistakes[i].wrongAnswer = mergedWrong;
+                        DataStore.mistakes[i].correctAnswer = mergedCorrect;
+                        DataStore.mistakes[i].reason = mergedReason;
+                        DataStore.mistakes[i].tags = mergedTags;
+                        DataStore.mistakes[i].merged = true;
+                        DataStore.mistakes[i].mergedCount = cluster.members.length;
+                        break;
+                    }
+                }
+
+                DataStore.save();
+                cachedClusters = null;
+                allClustersCache = null;
+                renderClusters();
+                try { updateRadarChart(); } catch(e) {}
+                try { updateDashboard(); } catch(e) {}
+                try { updateDoughnutChart(); } catch(e) {}
+                showToast('已将' + cluster.members.length + '道相似错题合并为一条', 'success');
+            } catch(e) {
+                console.log('mergeClusterToFirst error:', e);
+                showToast('合并失败', 'error');
+            }
+        }
+
+        function filterClusterView(type) {
+            try {
+                var cards = document.querySelectorAll('.cluster-card');
+                var clusters = allClustersCache || getMistakeClusters(false);
+                clusters.forEach(function(cluster, idx) {
+                    var card = document.getElementById('cluster-detail-' + idx);
+                    if (card) card.classList.add('hidden');
+                    var arrow = document.getElementById('cluster-arrow-' + idx);
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                });
+                // 滚动到对应区域
+                if (type === 'single') {
+                    var el = document.querySelector('h4:has(.fa-cube)');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch(e) {}
         }
 
         // ========== 多端实时同步引擎（BroadcastChannel + Storage事件） ==========
