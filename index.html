@@ -116,15 +116,29 @@
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: var(--radius-lg);
             margin-bottom: 4px;
+            position: relative;
         }
         .nav-item:hover {
             background: rgba(99,102,241,0.08);
             color: var(--primary);
         }
         .nav-item.active {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+            background: rgba(99,102,241,0.08);
+            color: var(--primary);
+            font-weight: 600;
+            box-shadow: none;
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 8px rgba(99,102,241,0.4);
         }
         .fade-in {
             animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -802,17 +816,17 @@
                                 <h3 class="text-xl font-bold text-gray-800">错题智能聚类</h3>
                                 <p class="text-sm text-gray-500 mt-1">基于TF-IDF文本相似度自动发现本质相同的题目，合并复习</p>
                             </div>
-                            <button onclick="renderClusters()" class="px-4 py-2 bg-primary text-white rounded-xl text-sm hover:bg-primary/90 transition-colors"><i class="fas fa-sync-alt mr-1"></i>重新分析</button>
+                            <button onclick="renderClusters()" class="px-4 py-2 bg-sky-500 text-white rounded-xl text-sm hover:bg-sky-600 transition-colors shadow-sm shadow-sky-500/20"><i class="fas fa-sync-alt mr-1"></i>重新分析</button>
                         </div>
                         <div id="cluster-empty" class="hidden bg-white rounded-2xl shadow-sm p-12 border border-gray-50 text-center">
                             <svg width="100" height="100" viewBox="0 0 100 100" fill="none" class="mx-auto mb-4" style="opacity:0.5">
-                                <rect x="10" y="10" width="80" height="80" rx="16" fill="#f0f4f8"/>
-                                <circle cx="35" cy="40" r="8" fill="#6366f1" opacity="0.6"/>
-                                <circle cx="65" cy="40" r="8" fill="#6366f1" opacity="0.6"/>
-                                <circle cx="50" cy="65" r="8" fill="#f59e0b" opacity="0.6"/>
-                                <path d="M43 40 L57 40" stroke="#6366f1" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
-                                <path d="M39 46 L47 60" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
-                                <path d="M61 46 L53 60" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
+                                <rect x="10" y="10" width="80" height="80" rx="16" fill="#f0f9ff"/>
+                                <circle cx="35" cy="40" r="8" fill="#0ea5e9" opacity="0.6"/>
+                                <circle cx="65" cy="40" r="8" fill="#0ea5e9" opacity="0.6"/>
+                                <circle cx="50" cy="65" r="8" fill="#38bdf8" opacity="0.6"/>
+                                <path d="M43 40 L57 40" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                                <path d="M39 46 L47 60" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
+                                <path d="M61 46 L53 60" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
                                 <text x="50" y="92" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="sans-serif">SIMILARITY CLUSTER</text>
                             </svg>
                             <p class="text-sm text-gray-400">还没有错题数据</p>
@@ -831,26 +845,26 @@
                                 <p class="text-sm text-gray-500 mt-1">错题知识点关联网络，发现薄弱知识链路</p>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="renderKnowledgeGraph('subject')" class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-medium hover:bg-indigo-100 transition-colors">按科目</button>
+                                <button onclick="renderKnowledgeGraph('subject')" class="px-3 py-2 bg-sky-500 text-white rounded-xl text-xs font-medium hover:bg-sky-600 transition-colors shadow-sm shadow-sky-500/20">按科目</button>
                                 <button onclick="renderKnowledgeGraph('tag')" class="px-3 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-100 transition-colors">按标签</button>
                                 <button onclick="renderKnowledgeGraph('type')" class="px-3 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-100 transition-colors">按题型</button>
                             </div>
                         </div>
-                        <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-50">
+                        <div class="bg-white rounded-2xl shadow-sm p-6 border border-sky-100/50">
                             <div id="kg-container" style="width:100%;height:500px;position:relative;">
                                 <div id="kg-empty" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                                     <svg width="120" height="120" viewBox="0 0 120 120" fill="none" class="mb-4" style="opacity:0.6">
-                                        <circle cx="60" cy="60" r="50" fill="#f0f4f8"/>
-                                        <circle cx="60" cy="60" r="8" fill="#6366f1" opacity="0.8"/>
-                                        <circle cx="35" cy="35" r="5" fill="#10b981" opacity="0.6"/>
+                                        <circle cx="60" cy="60" r="50" fill="#f0f9ff"/>
+                                        <circle cx="60" cy="60" r="8" fill="#0ea5e9" opacity="0.8"/>
+                                        <circle cx="35" cy="35" r="5" fill="#38bdf8" opacity="0.6"/>
                                         <circle cx="85" cy="40" r="5" fill="#f59e0b" opacity="0.6"/>
                                         <circle cx="40" cy="85" r="5" fill="#ef4444" opacity="0.6"/>
-                                        <circle cx="80" cy="80" r="5" fill="#8b5cf6" opacity="0.6"/>
-                                        <line x1="60" y1="60" x2="35" y2="35" stroke="#6366f1" stroke-width="1.5" opacity="0.3"/>
-                                        <line x1="60" y1="60" x2="85" y2="40" stroke="#6366f1" stroke-width="1.5" opacity="0.3"/>
-                                        <line x1="60" y1="60" x2="40" y2="85" stroke="#6366f1" stroke-width="1.5" opacity="0.3"/>
-                                        <line x1="60" y1="60" x2="80" y2="80" stroke="#6366f1" stroke-width="1.5" opacity="0.3"/>
-                                        <line x1="35" y1="35" x2="85" y2="40" stroke="#10b981" stroke-width="1" opacity="0.2"/>
+                                        <circle cx="80" cy="80" r="5" fill="#0ea5e9" opacity="0.6"/>
+                                        <line x1="60" y1="60" x2="35" y2="35" stroke="#0ea5e9" stroke-width="1.5" opacity="0.3"/>
+                                        <line x1="60" y1="60" x2="85" y2="40" stroke="#0ea5e9" stroke-width="1.5" opacity="0.3"/>
+                                        <line x1="60" y1="60" x2="40" y2="85" stroke="#0ea5e9" stroke-width="1.5" opacity="0.3"/>
+                                        <line x1="60" y1="60" x2="80" y2="80" stroke="#0ea5e9" stroke-width="1.5" opacity="0.3"/>
+                                        <line x1="35" y1="35" x2="85" y2="40" stroke="#38bdf8" stroke-width="1" opacity="0.2"/>
                                         <text x="60" y="110" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="sans-serif">KNOWLEDGE GRAPH</text>
                                     </svg>
                                     <p class="text-sm">还没有错题数据</p>
@@ -1110,7 +1124,7 @@
                 <!-- 学习计划 -->
                 <section id="plan" class="section-content section-hidden section-transition">
                     <div class="space-y-6">
-                        <div class="gradient-bg rounded-2xl p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+                        <div class="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-2xl p-8 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                             <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-xl"></div>
                             <div class="relative flex items-center justify-between">
@@ -1118,7 +1132,7 @@
                                     <h3 class="text-2xl font-bold mb-2">智能学习计划</h3>
                                     <p class="text-white/80 text-sm">基于你的学习数据，AI为你定制专属学习计划</p>
                                 </div>
-                                <button onclick="generateStudyPlan()" class="bg-white/95 backdrop-blur text-indigo-600 px-6 py-3 rounded-xl font-semibold hover:bg-white transition-all flex items-center gap-2 shadow-lg shadow-black/10">
+                                <button onclick="generateStudyPlan()" class="bg-white/95 backdrop-blur text-orange-600 px-6 py-3 rounded-xl font-semibold hover:bg-white transition-all flex items-center gap-2 shadow-lg shadow-black/10">
                                     <i class="fas fa-magic"></i>
                                     生成计划
                                 </button>
@@ -1300,7 +1314,7 @@
                 <section id="smart-review" class="section-content section-hidden section-transition">
                     <div class="space-y-6">
                         <!-- 遗忘曲线说明 -->
-                        <div class="gradient-bg rounded-2xl p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+                        <div class="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-2xl p-8 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                             <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-xl"></div>
                             <div class="relative flex items-center justify-between">
@@ -1318,8 +1332,8 @@
                         <!-- 遗忘曲线可视化 -->
                         <div class="bg-white rounded-2xl p-6 shadow-sm">
                             <div class="flex items-center gap-3 mb-6">
-                                <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                                    <i class="fas fa-wave-square text-blue-500"></i>
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                                    <i class="fas fa-wave-square text-amber-500"></i>
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-bold text-gray-800">遗忘曲线</h3>
@@ -4118,13 +4132,13 @@
 
                 // 统计卡片
                 var html = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">';
-                html += '<div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'all\')"><p class="text-xs text-gray-500 font-medium">总错题数</p><p class="text-2xl font-bold text-gray-800 mt-1">' + DataStore.mistakes.length + '</p><p class="text-xs text-indigo-400 mt-1">点击查看全部</p></div>';
-                html += '<div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'multi\')"><p class="text-xs text-gray-500 font-medium">发现相似组</p><p class="text-2xl font-bold text-amber-600 mt-1">' + multiClusters.length + '</p><p class="text-xs text-amber-400 mt-1">点击查看详情</p></div>';
+                html += '<div class="bg-gradient-to-br from-sky-50 to-cyan-50 rounded-2xl p-5 border border-sky-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'all\')"><p class="text-xs text-gray-500 font-medium">总错题数</p><p class="text-2xl font-bold text-gray-800 mt-1">' + DataStore.mistakes.length + '</p><p class="text-xs text-sky-400 mt-1">点击查看全部</p></div>';
+                html += '<div class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl p-5 border border-sky-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'multi\')"><p class="text-xs text-gray-500 font-medium">发现相似组</p><p class="text-2xl font-bold text-sky-600 mt-1">' + multiClusters.length + '</p><p class="text-xs text-sky-400 mt-1">点击查看详情</p></div>';
                 html += '<div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 cursor-pointer hover:shadow-md transition-shadow" onclick="filterClusterView(\'single\')"><p class="text-xs text-gray-500 font-medium">独立错题</p><p class="text-2xl font-bold text-green-600 mt-1">' + singleClusters.length + '</p><p class="text-xs text-green-400 mt-1">点击查看详情</p></div>';
                 html += '</div>';
 
                 // 相似组
-                html += '<h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-layer-group text-indigo-500 mr-2"></i>相似错题组（' + multiClusters.length + '组）</h4>';
+                html += '<h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-layer-group text-sky-500 mr-2"></i>相似错题组（' + multiClusters.length + '组）</h4>';
                 html += '<div class="space-y-4 mb-8">';
                 multiClusters.forEach(function(cluster, ci) {
                     var globalIdx = clusters.indexOf(cluster);
@@ -4159,7 +4173,7 @@
             html += '<div class="flex items-center justify-between">';
             html += '<div class="flex items-center gap-2"><span class="px-2 py-1 rounded-lg text-xs font-bold text-white" style="background:' + color + '">' + escapeHtml(subj) + '</span>';
             if (isMulti) {
-                html += '<span class="px-2 py-1 rounded-lg text-xs bg-indigo-50 text-indigo-600">组 ' + (displayIdx + 1) + '</span>';
+                html += '<span class="px-2 py-1 rounded-lg text-xs bg-sky-50 text-sky-600">组 ' + (displayIdx + 1) + '</span>';
                 html += '<span class="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600">' + cluster.members.length + ' 道相似</span>';
             } else {
                 html += '<span class="px-2 py-1 rounded-lg text-xs bg-gray-100 text-gray-500">独立</span>';
@@ -4178,7 +4192,7 @@
                 var isMastered = m.mastered;
                 html += '<div class="p-4 rounded-xl ' + (isMastered ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-100') + '">';
                 html += '<div class="flex items-start justify-between mb-2">';
-                html += '<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ' + (mi === 0 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500') + '">' + (mi + 1) + '</span>';
+                html += '<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ' + (mi === 0 ? 'bg-sky-100 text-sky-600' : 'bg-gray-200 text-gray-500') + '">' + (mi + 1) + '</span>';
                 if (isMastered) html += '<span class="px-2 py-0.5 rounded-full text-xs bg-green-200 text-green-700">已掌握</span>';
                 html += '<span class="text-xs text-gray-400">' + escapeHtml(m.type || '') + '</span></div>';
                 html += '<div class="flex gap-1">';
@@ -4194,7 +4208,7 @@
             // 底部操作栏（仅多成员组显示）
             if (isMulti && cluster.members.length > 1) {
                 html += '<div class="flex items-center gap-2 pt-2 border-t border-gray-100">';
-                html += '<button onclick="event.stopPropagation();mergeClusterToFirst(' + globalIdx + ')" class="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"><i class="fas fa-compress-arrows-alt mr-1"></i>合并为一条</button>';
+                html += '<button onclick="event.stopPropagation();mergeClusterToFirst(' + globalIdx + ')" class="flex-1 px-4 py-2.5 bg-sky-500 text-white rounded-xl text-sm font-medium hover:bg-sky-600 transition-colors shadow-sm shadow-sky-500/20"><i class="fas fa-compress-arrows-alt mr-1"></i>合并为一条</button>';
                 html += '<button onclick="event.stopPropagation();mergeClusterMastered(' + globalIdx + ')" class="flex-1 px-4 py-2.5 bg-green-50 text-green-600 rounded-xl text-sm font-medium hover:bg-green-100 transition-colors"><i class="fas fa-check-double mr-1"></i>全部掌握</button>';
                 html += '</div>';
             }
