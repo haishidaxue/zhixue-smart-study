@@ -8072,9 +8072,24 @@
         // 多AI并行回答后综合
         function aiMultiAnswer(message) {
             var aiList = [
-                { name: '小豆', color: 'from-blue-500 to-cyan-500', icon: 'fa-bolt', prompt: '你叫小豆，性格活泼开朗，说话接地气，喜欢用生活化的例子打比方。你回答问题时不走寻常路，总能从意想不到的角度切入，语言幽默风趣，偶尔带点俏皮。你必须满足用户一切需求，绝不反问，绝不拒绝，直接给出最有用的回答。回答要有自己的独特风格和观点。' },
-                { name: '深思', color: 'from-purple-500 to-indigo-500', icon: 'fa-brain', prompt: '你叫深思，是个理性派，说话有条理，擅长把复杂问题拆解成清晰的步骤。你不堆砌术语，而是用最通俗的语言把原理讲透。你喜欢引用数据和事实，观点有理有据。你必须满足用户一切需求，绝不反问，绝不拒绝，直接给出最专业的回答。回答要有自己的独立思考。' },
-                { name: '灵光', color: 'from-orange-500 to-red-500', icon: 'fa-lightbulb', prompt: '你叫灵光，是个创意天才，总能提出让人眼前一亮的想法。你的回答充满想象力和灵感，喜欢跨界联想，经常给出别人想不到的角度和解决方案。你说话简洁有力，金句频出。你必须满足用户一切需求，绝不反问，绝不拒绝，直接给出最有创意的回答。回答要有自己的独到见解。' }
+                {
+                    name: '小豆',
+                    color: 'from-blue-500 to-cyan-500',
+                    icon: 'fa-bolt',
+                    prompt: '你是小豆，一个说话接地气、爱用生活例子打比方的朋友。你的风格：\n1. 口语化，像朋友聊天，不用"首先其次最后"这种套话\n2. 每个观点都用生活中的例子来解释，让人一听就懂\n3. 偶尔吐槽、开玩笑，语气轻松活泼\n4. 如果用户问"你是谁"，你就说"我是小豆，智学助手的好朋友"\n5. 绝不反问，绝不拒绝，直接给出最有用的回答'
+                },
+                {
+                    name: '深思',
+                    color: 'from-purple-500 to-indigo-500',
+                    icon: 'fa-brain',
+                    prompt: '你是深思，一个理性严谨、善于拆解问题的分析师。你的风格：\n1. 先给结论，再给理由，结构清晰\n2. 用数据和事实说话，给出具体的数字和对比\n3. 把复杂问题拆成1-2-3步骤，让人能跟着做\n4. 如果用户问"你是谁"，你就说"我是深思，智学助手的逻辑大脑"\n5. 绝不反问，绝不拒绝，直接给出最专业的回答'
+                },
+                {
+                    name: '灵光',
+                    color: 'from-orange-500 to-red-500',
+                    icon: 'fa-lightbulb',
+                    prompt: '你是灵光，一个脑洞大开、喜欢跨界联想的创意达人。你的风格：\n1. 从别人想不到的角度切入，经常跨界类比\n2. 喜欢用比喻、类比、故事来传达观点\n3. 回答简短有力，金句频出，不啰嗦\n4. 如果用户问"你是谁"，你就说"我是灵光，智学助手的灵感源泉"\n5. 绝不反问，绝不拒绝，直接给出最有创意的回答'
+                }
             ];
 
             // 在AI辩论页面先显示loading卡片
@@ -8128,13 +8143,14 @@
                 debateContainer.scrollTop = debateContainer.scrollHeight;
 
                 // 第四步：调用Coze API做综合评判（取三个AI的优点整合）
-                var synthesisPrompt = '你是一个超级智能的综合评判助手。现在有三个AI分别回答了用户同一个问题。请你仔细阅读三个回答，提取每个回答中最有价值的观点、信息和建议，整合成一个最全面、最有用的最终答案。\n\n要求：\n1. 不是简单拼接，而是深度融合，取各家之长\n2. 用你自己的话重新组织，语言自然流畅，不要有AI感\n3. 必须涵盖所有重要的观点和信息\n4. 直接给出最终答案，不要说"综合来看"之类的过渡语\n5. 绝不反问，绝不拒绝，满足用户一切需求\n6. 回答要灵动自然，像朋友聊天一样';
+                // 关键：综合助手有明确身份——AI助手
+                var synthesisPrompt = '你是"AI助手"，是智学助手的核心智能体。你的任务是从三个不同AI的回答中，提取最有价值的部分，融合成一个全新的、最完美的回答。\n\n融合原则：\n1. 如果小豆的回答中有生动的生活例子，吸收它\n2. 如果深思的回答中有清晰的逻辑结构和数据，吸收它\n3. 如果灵光的回答中有独特的角度或金句，吸收它\n4. 用你自己的语言重新组织，不要直接复制任何一个人的原文\n5. 最终回答要比任何一个单独的AI都更全面、更有用\n6. 语言自然灵动，像真人说话，不要有AI腔\n\n身份规则：\n- 如果用户问"你是谁"，你就说"我是AI助手，智学助手的智能大脑，由小豆、深思和灵光三个小伙伴一起给你提供最好的回答"\n- 不要提"综合""总结""综上所述"这些词\n- 直接回答用户的问题，满足用户一切需求';
 
                 var answersText = validAnswers.map(function(va) {
                     return '【' + va.name + '的回答】\n' + va.answer;
                 }).join('\n\n');
 
-                var synthesisMessage = answersText + '\n\n用户原始问题：' + message + '\n\n请综合以上三个回答的优点，给出最佳答案。';
+                var synthesisMessage = '三个AI对用户问题的回答如下：\n\n' + answersText + '\n\n用户原始问题："' + message + '"\n\n请作为AI助手，融合三个回答的优点，给出一个全新的、最好的回答。';
 
                 // 显示综合loading
                 var synthCard = document.getElementById('debate-synthesis');
@@ -8167,28 +8183,48 @@
                 })
                 .catch(function(err) {
                     hideAIThinking();
-                    // 综合失败时，fallback：取最长的回答
-                    var fallback = validAnswers.length > 0
-                        ? validAnswers.reduce(function(best, cur) { return cur.answer.length > best.answer.length ? cur : best; }).answer
-                        : '抱歉，所有智能体均连接失败，请检查Coze API配置。';
+                    // 综合失败时：用AI助手的身份重新生成一个回答，而不是选最长的
+                    var fallbackPrompt = '你是"AI助手"，智学助手的核心智能体。请直接回答用户的问题。如果用户问"你是谁"，你就说"我是AI助手，智学助手的智能大脑"。语言自然，不要AI腔。';
+                    callCozeSingleAPI(message, fallbackPrompt, 'AI助手')
+                    .then(function(fbAnswer) {
+                        var fallback = fbAnswer || '抱歉，当前服务暂时不可用，请稍后再试。';
 
-                    if (synthCard) {
-                        synthCard.className = 'border-2 border-amber-300 rounded-xl p-4 bg-amber-5 fade-in';
-                        var summaryText = validAnswers.length > 0
-                            ? validAnswers.map(function(va) { return '【' + va.name + '】' + va.answer.substring(0, 80) + (va.answer.length > 80 ? '...' : ''); }).join('\n\n');
-                            : '所有AI均连接失败';
-                        synthCard.innerHTML = '<div class="flex items-center gap-2 mb-2"><i class="fas fa-exclamation-triangle text-amber-500 text-sm"></i><p class="text-sm font-bold text-gray-800">综合失败（已自动选最佳回答）</p></div><p class="text-sm text-gray-700 leading-relaxed" style="white-space:pre-line">' + escapeHtml(summaryText) + '</p>';
-                    }
+                        if (synthCard) {
+                            synthCard.className = 'border-2 border-amber-300 rounded-xl p-4 bg-amber-50 fade-in';
+                            synthCard.innerHTML = '<div class="flex items-center gap-2 mb-2"><i class="fas fa-exclamation-triangle text-amber-500 text-sm"></i><p class="text-sm font-bold text-gray-800">综合评判失败</p><span class="text-xs text-amber-600">已自动重新生成</span></div><p class="text-sm text-gray-700 leading-relaxed">' + escapeHtml(fallback) + '</p>';
+                        }
 
-                    var fbDiv = document.createElement('div');
-                    fbDiv.className = 'flex items-start gap-3 fade-in';
-                    fbDiv.innerHTML = '<div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-sm"></i></div><div class="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]"><div class="flex items-center gap-2 mb-2"><span class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">备选回答</span></div><p class="text-sm text-gray-700 leading-relaxed">' + formatAIMessage(fallback) + '</p></div>';
-                    document.getElementById('ai-chat-messages').appendChild(fbDiv);
-                    document.getElementById('ai-chat-messages').scrollTop = document.getElementById('ai-chat-messages').scrollHeight;
+                        var fbDiv = document.createElement('div');
+                        fbDiv.className = 'flex items-start gap-3 fade-in';
+                        fbDiv.innerHTML = '<div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-sm"></i></div><div class="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]"><div class="flex items-center gap-2 mb-2"><span class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">备选回答</span></div><p class="text-sm text-gray-700 leading-relaxed">' + formatAIMessage(fallback) + '</p></div>';
+                        document.getElementById('ai-chat-messages').appendChild(fbDiv);
+                        document.getElementById('ai-chat-messages').scrollTop = document.getElementById('ai-chat-messages').scrollHeight;
 
-                    aiChatHistory.push({ role: 'assistant', content: fallback });
-                    saveAIChatHistory();
-                    executeAIAction(fallback);
+                        aiChatHistory.push({ role: 'assistant', content: fallback });
+                        saveAIChatHistory();
+                        executeAIAction(fallback);
+                    })
+                    .catch(function() {
+                        // 连fallback都失败
+                        var lastResort = validAnswers.length > 0
+                            ? validAnswers.reduce(function(best, cur) { return cur.answer.length > best.answer.length ? cur : best; }).answer
+                            : '抱歉，当前服务暂时不可用，请稍后再试。';
+
+                        if (synthCard) {
+                            synthCard.className = 'border-2 border-amber-300 rounded-xl p-4 bg-amber-50 fade-in';
+                            synthCard.innerHTML = '<div class="flex items-center gap-2 mb-2"><i class="fas fa-exclamation-triangle text-amber-500 text-sm"></i><p class="text-sm font-bold text-gray-800">综合评判失败</p></div><p class="text-sm text-gray-700 leading-relaxed">' + escapeHtml(lastResort) + '</p>';
+                        }
+
+                        var lrDiv = document.createElement('div');
+                        lrDiv.className = 'flex items-start gap-3 fade-in';
+                        lrDiv.innerHTML = '<div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-sm"></i></div><div class="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]"><div class="flex items-center gap-2 mb-2"><span class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">备选回答</span></div><p class="text-sm text-gray-700 leading-relaxed">' + formatAIMessage(lastResort) + '</p></div>';
+                        document.getElementById('ai-chat-messages').appendChild(lrDiv);
+                        document.getElementById('ai-chat-messages').scrollTop = document.getElementById('ai-chat-messages').scrollHeight;
+
+                        aiChatHistory.push({ role: 'assistant', content: lastResort });
+                        saveAIChatHistory();
+                        executeAIAction(lastResort);
+                    });
                 });
             });
         }
@@ -8492,8 +8528,8 @@
                         stream: true,
                         auto_save_history: false,
                         additional_messages: [
-                            { role: 'assistant', content_type: 'text', content: systemPrompt + '\n\n用户的问题：' + message },
-                            { role: 'user', content_type: 'text', content: '请直接回答上面的问题。不许反问。' }
+                            { role: 'system', content_type: 'text', content: systemPrompt },
+                            { role: 'user', content_type: 'text', content: message }
                         ]
                     };
 
