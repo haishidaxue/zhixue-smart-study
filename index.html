@@ -10088,7 +10088,7 @@
                 globe.worldMapImg.onerror = function() {
                     console.log('World map image failed to load');
                 };
-                globe.worldMapImg.src = '世界地图.webp';
+                globe.worldMapImg.src = '世界地图.png';
             }
             
             // 鼠标事件
@@ -14731,16 +14731,45 @@
 
             // 启动每分钟轮询检查提醒
 
-            // PWA: 注册Service Worker
+            // PWA: 注册Service Worker（强制更新策略）
             try {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('sw.js').then(function(reg) {
-                        console.log('SW registered:', reg.scope);
+                    navigator.serviceWorker.register('sw.js?v=20261006', { updateViaCache: 'none' }).then(function(reg) {
+                        // 检测到新SW立即激活
+                        reg.addEventListener('updatefound', function() {
+                            var newSW = reg.installing;
+                            if (newSW) {
+                                newSW.addEventListener('statechange', function() {
+                                    if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                                        // 新SW已安装，立即激活并刷新页面
+                                        newSW.postMessage('SKIP_WAITING');
+                                        setTimeout(function() { window.location.reload(); }, 500);
+                                    }
+                                });
+                            }
+                        });
+                        // 强制检查更新
+                        reg.update();
                     }).catch(function(err) {
                         console.log('SW register fail:', err);
                     });
+
+                    // 监听SW发来的刷新消息
+                    navigator.serviceWorker.addEventListener('controllerchange', function() {
+                        window.location.reload();
+                    });
                 }
             } catch(e) {}
+
+            // 强制检查页面版本：如果URL没有版本参数，自动加一个并刷新
+            (function() {
+                var url = new URL(window.location.href);
+                if (!url.searchParams.has('v')) {
+                    url.searchParams.set('v', Date.now());
+                    // 不刷新，只加参数让浏览器知道这是新请求
+                    history.replaceState(null, '', url.toString());
+                }
+            })();
 
             // 多端同步引擎初始化
             try {
