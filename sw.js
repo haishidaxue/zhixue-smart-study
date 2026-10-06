@@ -1,10 +1,13 @@
-var CACHE_NAME = 'zhixue-v3';
+var CACHE_NAME = 'zhixue-v5';
 var ASSETS = [
     '/zhixue-smart-study/',
     '/zhixue-smart-study/index.html',
     '/zhixue-smart-study/manifest.json',
     '/zhixue-smart-study/icon-192.png',
-    '/zhixue-smart-study/icon-512.png'
+    '/zhixue-smart-study/icon-512.png',
+    '/zhixue-smart-study/sw.js',
+    '/zhixue-smart-study/世界地图.png',
+    '/zhixue-smart-study/中国地图.webp'
 ];
 
 var CDN_ASSETS = [
@@ -18,48 +21,44 @@ var CDN_ASSETS = [
 ];
 
 self.addEventListener('install', function(e) {
+    self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then(function(cache) {
-            return cache.addAll(ASSETS).catch(function(err) {
-                console.log('Cache addAll partial fail:', err);
-            }).then(function() {
-                return cache.addAll(CDN_ASSETS).catch(function(err) {
-                    console.log('CDN cache partial fail:', err);
-                });
+            return cache.addAll(ASSETS).catch(function(err) {}).then(function() {
+                return cache.addAll(CDN_ASSETS).catch(function(err) {});
             });
         })
     );
-    self.skipWaiting();
 });
 
 self.addEventListener('activate', function(e) {
     e.waitUntil(
         caches.keys().then(function(keys) {
             return Promise.all(
-                keys.filter(function(k) { return k !== CACHE_NAME; })
-                    .map(function(k) { return caches.delete(k); })
+                keys.map(function(k) {
+                    if (k !== CACHE_NAME) return caches.delete(k);
+                })
             );
+        }).then(function() {
+            return self.clients.claim();
         })
     );
-    self.clients.claim();
 });
 
 self.addEventListener('fetch', function(e) {
     if (e.request.method !== 'GET') return;
 
     e.respondWith(
-        caches.match(e.request).then(function(cached) {
-            if (cached) return cached;
-
-            return fetch(e.request).then(function(response) {
-                if (!response || response.status !== 200) return response;
-
-                var clone = response.clone();
-                caches.open(CACHE_NAME).then(function(cache) {
-                    try { cache.put(e.request, clone); } catch(err) {}
-                });
-                return response;
-            }).catch(function() {
+        fetch(e.request).then(function(response) {
+            if (!response || response.status !== 200) return response;
+            var clone = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+                try { cache.put(e.request, clone); } catch(err) {}
+            });
+            return response;
+        }).catch(function() {
+            return caches.match(e.request).then(function(cached) {
+                if (cached) return cached;
                 if (e.request.destination === 'document') {
                     return caches.match('/zhixue-smart-study/index.html');
                 }
